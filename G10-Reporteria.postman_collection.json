@@ -1,0 +1,590 @@
+{
+  "info": {
+    "_postman_id": "g10-reporteria-fishmarket-cloud",
+    "name": "G10 – Reportería / Batch / Streaming",
+    "description": "Colección de pruebas para todos los endpoints del mock G10 – FishMarket Cloud.\nBase URL: https://g10-reporteria-mock.onrender.com\n\nVariables de entorno requeridas:\n- baseUrl: URL base del mock (local o Render)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://g10-reporteria-mock.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "startDate",
+      "value": "2025-01-01",
+      "type": "string"
+    },
+    {
+      "key": "endDate",
+      "value": "2025-01-31",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🟢 Health Check",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status is ok', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.service).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Reportes",
+      "item": [
+        {
+          "name": "GET /reports/sales-summary (por día)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene campo summary', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('summary');",
+                  "  pm.expect(json.summary).to.have.property('totalRevenue');",
+                  "  pm.expect(json.summary).to.have.property('totalOrders');",
+                  "  pm.expect(json.summary).to.have.property('averageOrderValue');",
+                  "});",
+                  "pm.test('Tiene timeSeries', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.timeSeries).to.be.an('array').that.is.not.empty;",
+                  "  const first = json.timeSeries[0];",
+                  "  pm.expect(first).to.have.property('date');",
+                  "  pm.expect(first).to.have.property('orders');",
+                  "  pm.expect(first).to.have.property('revenue');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary?startDate={{startDate}}&endDate={{endDate}}&groupBy=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" },
+                { "key": "groupBy",   "value": "day" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/sales-summary (por semana)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('groupBy es week', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.period.groupBy).to.eql('week');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary?startDate={{startDate}}&endDate={{endDate}}&groupBy=week",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" },
+                { "key": "groupBy",   "value": "week" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/sales-summary (groupBy inválido → 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 para groupBy inválido', () => pm.response.to.have.status(400));",
+                  "pm.test('Tiene campo error', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary?groupBy=invalid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"],
+              "query": [
+                { "key": "groupBy", "value": "invalid" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/products (top 5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('topProducts es array con max 5 elementos', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.topProducts).to.be.an('array');",
+                  "  pm.expect(json.topProducts.length).to.be.at.most(5);",
+                  "  const p = json.topProducts[0];",
+                  "  pm.expect(p).to.have.property('productId');",
+                  "  pm.expect(p).to.have.property('revenue');",
+                  "  pm.expect(p).to.have.property('unitsSold');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/products?startDate={{startDate}}&endDate={{endDate}}&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "products"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" },
+                { "key": "limit",     "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene statusBreakdown con porcentajes', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.statusBreakdown).to.be.an('array').that.is.not.empty;",
+                  "  const total = json.statusBreakdown.reduce((s, r) => s + r.percentage, 0);",
+                  "  pm.expect(total).to.be.closeTo(100, 1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/status?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "status"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/fulfillment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Métricas de fulfillment presentes', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.metrics).to.have.property('fulfillmentRate');",
+                  "  pm.expect(json.metrics).to.have.property('avgDeliveryTimeDays');",
+                  "  pm.expect(json.byRegion).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.byCarrier).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/fulfillment?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "fulfillment"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/communications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene byType con openRate', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.byType).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.byType[0]).to.have.property('openRate');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/communications?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "communications"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/order-trends",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene trends e insights', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.trends).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.insights).to.have.property('growthRate');",
+                  "  pm.expect(json.insights).to.have.property('peakDay');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/order-trends?startDate={{startDate}}&endDate={{endDate}}&interval=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "order-trends"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" },
+                { "key": "interval",  "value": "day" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /reports/payment-summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tiene byMethod con successRate', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.byMethod).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.byMethod[0]).to.have.property('successRate');",
+                  "  pm.expect(json.summary).to.have.property('totalAmount');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/payment-summary?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "payment-summary"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventario",
+      "item": [
+        {
+          "name": "GET /inventory/low-stock (threshold 10)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Todos los productos están bajo el threshold', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.threshold).to.eql(10);",
+                  "  json.products.forEach(p => {",
+                  "    pm.expect(p.currentStock).to.be.below(10);",
+                  "    pm.expect(p).to.have.property('urgency');",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "low-stock"],
+              "query": [
+                { "key": "threshold", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /inventory/low-stock (threshold crítico 5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Productos con urgencia critical tienen stock ≤ 3', () => {",
+                  "  const json = pm.response.json();",
+                  "  const criticals = json.products.filter(p => p.urgency === 'critical');",
+                  "  criticals.forEach(p => pm.expect(p.currentStock).to.be.at.most(3));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "low-stock"],
+              "query": [
+                { "key": "threshold", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /inventory/low-stock (threshold inválido → 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 para threshold inválido', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=abc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inventory", "low-stock"],
+              "query": [
+                { "key": "threshold", "value": "abc" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Batch",
+      "item": [
+        {
+          "name": "POST /batch/recalculate (daily)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "pm.test('Retorna jobId y status queued', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('jobId');",
+                  "  pm.expect(json.status).to.eql('queued');",
+                  "  pm.expect(json).to.have.property('estimatedCompletionTime');",
+                  "  pm.collectionVariables.set('lastJobId', json.jobId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetDate\": \"2025-01-15\",\n  \"scope\": \"daily\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/batch/recalculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "batch", "recalculate"]
+            }
+          }
+        },
+        {
+          "name": "POST /batch/recalculate (monthly)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "pm.test('scope es monthly', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.scope).to.eql('monthly');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetDate\": \"2025-01-01\",\n  \"scope\": \"monthly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/batch/recalculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "batch", "recalculate"]
+            }
+          }
+        },
+        {
+          "name": "POST /batch/recalculate (scope inválido → 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 para scope inválido', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetDate\": \"2025-01-15\",\n  \"scope\": \"hourly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/batch/recalculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "batch", "recalculate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔴 Errores (404)",
+      "item": [
+        {
+          "name": "GET /ruta-inexistente → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 para ruta inexistente', () => pm.response.to.have.status(404));",
+                  "pm.test('Tiene campo error', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ruta-inexistente",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ruta-inexistente"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
