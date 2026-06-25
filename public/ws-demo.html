@@ -119,28 +119,29 @@
 <script>
   let ws = null;
   let eventCount = 0;
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const BASE_WS  = proto + "://" + location.host;
   const BASE_HTTP = location.origin;
-  const BASE_WS   = location.origin.replace(/^http/, 'ws');
+  
 
   document.getElementById('ws-url-label').textContent = BASE_WS + '/ws';
 
   function connect() {
-    if (ws && ws.readyState < 2) return;
-    ws = new WebSocket(BASE_WS + '/ws');
-
-    ws.onopen = () => {
-      setStatus(true);
-    };
-
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      addEvent(msg);
-      updateStats(msg);
-      document.getElementById('raw-output').textContent = JSON.stringify(msg, null, 2);
-    };
-
-    ws.onclose = () => setStatus(false);
-    ws.onerror = () => setStatus(false);
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    try {
+      ws = new WebSocket(BASE_WS + '/ws');
+      ws.onopen = () => { console.log('WS open'); setStatus(true); };
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          addEvent(msg);
+          updateStats(msg);
+          document.getElementById('raw-output').textContent = JSON.stringify(msg, null, 2);
+        } catch(err) { console.error('parse error', err); }
+      };
+      ws.onclose = (e) => { console.log('WS closed', e.code); setStatus(false); };
+      ws.onerror = (e) => { console.error('WS error', e); setStatus(false); };
+    } catch(err) { console.error('WS init error', err); setStatus(false); }
   }
 
   function disconnect() {
