@@ -12,63 +12,48 @@
   .layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; max-width: 1100px; }
   .panel { background: #1e2130; border: 1px solid #2d3148; border-radius: 10px; padding: 16px; }
   .panel-title { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
-
-  /* Status bar */
   .status-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding: 10px 14px; background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
-  .dot.connected { background: #22c55e; animation: pulse 2s infinite; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; flex-shrink: 0; transition: background .3s; }
+  .dot.on { background: #22c55e; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
   .status-text { font-size: 13px; color: #94a3b8; }
   .ws-url { font-size: 11px; color: #475569; margin-left: auto; font-family: monospace; }
-
-  /* Buttons */
   .actions { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   button { padding: 8px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
   button:hover { opacity: .85; }
-  button:active { opacity: .7; }
   #btn-connect    { background: #3b82f6; color: #fff; }
   #btn-disconnect { background: #374151; color: #9ca3af; }
   #btn-batch      { background: #f59e0b; color: #000; }
   #btn-inventory  { background: #8b5cf6; color: #fff; }
   #btn-clear      { background: #1e2130; color: #6b7280; border: 1px solid #2d3148; }
-
-  /* Event feed */
   #feed { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; }
   .event { padding: 10px 12px; border-radius: 7px; border-left: 3px solid; animation: fadeIn .2s ease; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
   .event .ev-type  { font-size: 11px; font-weight: 600; font-family: monospace; margin-bottom: 3px; }
   .event .ev-msg   { font-size: 12px; color: #94a3b8; }
   .event .ev-time  { font-size: 10px; color: #475569; margin-top: 4px; }
   .event .ev-extra { font-size: 11px; font-family: monospace; color: #64748b; margin-top: 4px; }
-
-  .ev-connected    { background: #0f2d1f; border-color: #22c55e; }
-  .ev-connected .ev-type { color: #22c55e; }
-  .ev-pong         { background: #1e2130; border-color: #374151; }
-  .ev-pong .ev-type { color: #4b5563; }
-  .ev-batch-queued { background: #1c1a10; border-color: #f59e0b; }
-  .ev-batch-queued .ev-type { color: #f59e0b; }
-  .ev-batch-running { background: #181830; border-color: #3b82f6; }
-  .ev-batch-running .ev-type { color: #3b82f6; }
-  .ev-batch-completed { background: #0f2d1f; border-color: #22c55e; }
-  .ev-batch-completed .ev-type { color: #22c55e; }
-  .ev-inventory-alert { background: #2d1515; border-color: #ef4444; }
-  .ev-inventory-alert .ev-type { color: #ef4444; }
-  .ev-report-updated { background: #0f1e2d; border-color: #38bdf8; }
-  .ev-report-updated .ev-type { color: #38bdf8; }
-
-  /* Progress bar */
+  .ev-connected     { background:#0f2d1f; border-color:#22c55e; }
+  .ev-connected .ev-type { color:#22c55e; }
+  .ev-batch-queued  { background:#1c1a10; border-color:#f59e0b; }
+  .ev-batch-queued .ev-type { color:#f59e0b; }
+  .ev-batch-running { background:#181830; border-color:#3b82f6; }
+  .ev-batch-running .ev-type { color:#3b82f6; }
+  .ev-batch-completed { background:#0f2d1f; border-color:#22c55e; }
+  .ev-batch-completed .ev-type { color:#22c55e; }
+  .ev-inventory-alert { background:#2d1515; border-color:#ef4444; }
+  .ev-inventory-alert .ev-type { color:#ef4444; }
+  .ev-report-updated { background:#0f1e2d; border-color:#38bdf8; }
+  .ev-report-updated .ev-type { color:#38bdf8; }
+  .ev-pong { background:#1e2130; border-color:#374151; }
+  .ev-pong .ev-type { color:#4b5563; }
   .progress-bar { height: 3px; background: #1e293b; border-radius: 2px; margin-top: 6px; overflow: hidden; }
   .progress-fill { height: 100%; background: #3b82f6; border-radius: 2px; transition: width .5s ease; }
-
-  /* Stats panel */
   .stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #1e2130; }
   .stat:last-child { border: none; }
   .stat-label { font-size: 12px; color: #64748b; }
   .stat-value { font-size: 13px; font-weight: 500; color: #e2e8f0; font-family: monospace; }
-
-  /* JSON raw */
   #raw-output { background: #0f1117; border: 1px solid #1e2130; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: #64748b; max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-
   .empty-state { text-align: center; padding: 40px 20px; color: #374151; font-size: 13px; }
 </style>
 </head>
@@ -86,13 +71,12 @@
 <div class="layout">
   <div>
     <div class="actions">
-      <button id="btn-connect"    onclick="connect()">Conectar</button>
-      <button id="btn-disconnect" onclick="disconnect()">Desconectar</button>
-      <button id="btn-batch"      onclick="triggerBatch()">Disparar Batch Job</button>
-      <button id="btn-inventory"  onclick="subscribeInventory()">Alertas de inventario</button>
-      <button id="btn-clear"      onclick="clearFeed()">Limpiar</button>
+      <button id="btn-connect">Conectar</button>
+      <button id="btn-disconnect">Desconectar</button>
+      <button id="btn-batch">Disparar Batch Job</button>
+      <button id="btn-inventory">Alertas de inventario</button>
+      <button id="btn-clear">Limpiar</button>
     </div>
-
     <div class="panel">
       <div class="panel-title">Feed de eventos</div>
       <div id="feed"><div class="empty-state">Conecta el WebSocket y dispara un batch job para ver los eventos en tiempo real</div></div>
@@ -108,7 +92,6 @@
       <div class="stat"><span class="stat-label">Progreso</span><span class="stat-value" id="stat-progress">—</span></div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
-
     <div class="panel">
       <div class="panel-title">Último mensaje raw</div>
       <div id="raw-output">—</div>
@@ -117,49 +100,43 @@
 </div>
 
 <script>
-  let ws = null;
-  let eventCount = 0;
-  const proto = location.protocol === "https:" ? "wss" : "ws";
-  const BASE_WS  = proto + "://" + location.host;
-  const BASE_HTTP = location.origin;
-  
+  var ws = null;
+  var eventCount = 0;
+  var proto   = location.protocol === 'https:' ? 'wss' : 'ws';
+  var WS_URL  = proto + '://' + location.host + '/ws';
+  var API_URL = location.origin + '/api/v1/batch/recalculate';
 
-  document.getElementById('ws-url-label').textContent = BASE_WS + '/ws';
+  document.getElementById('ws-url-label').textContent = WS_URL;
+
+  function setStatus(connected) {
+    document.getElementById('dot').className = 'dot' + (connected ? ' on' : '');
+    document.getElementById('status-text').textContent = connected ? 'Conectado' : 'Desconectado';
+  }
 
   function connect() {
-    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
-    try {
-      ws = new WebSocket(BASE_WS + '/ws');
-      ws.onopen = () => { console.log('WS open'); setStatus(true); };
-      ws.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          addEvent(msg);
-          updateStats(msg);
-          document.getElementById('raw-output').textContent = JSON.stringify(msg, null, 2);
-        } catch(err) { console.error('parse error', err); }
-      };
-      ws.onclose = (e) => { console.log('WS closed', e.code); setStatus(false); };
-      ws.onerror = (e) => { console.error('WS error', e); setStatus(false); };
-    } catch(err) { console.error('WS init error', err); setStatus(false); }
+    if (ws && ws.readyState < 2) return;
+    ws = new WebSocket(WS_URL);
+    ws.onopen    = function() { setStatus(true); };
+    ws.onclose   = function() { setStatus(false); };
+    ws.onerror   = function() { setStatus(false); };
+    ws.onmessage = function(e) {
+      var msg = JSON.parse(e.data);
+      addEvent(msg);
+      updateStats(msg);
+      document.getElementById('raw-output').textContent = JSON.stringify(msg, null, 2);
+    };
   }
 
   function disconnect() {
     if (ws) ws.close();
   }
 
-  async function triggerBatch() {
-    try {
-      const res = await fetch(BASE_HTTP + '/api/v1/batch/recalculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetDate: new Date().toISOString().split('T')[0], scope: 'daily' }),
-      });
-      const data = await res.json();
-      console.log('Batch triggered:', data.jobId);
-    } catch (e) {
-      console.error('Error triggering batch:', e);
-    }
+  function triggerBatch() {
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetDate: new Date().toISOString().split('T')[0], scope: 'daily' })
+    }).catch(function(e) { console.error(e); });
   }
 
   function subscribeInventory() {
@@ -174,36 +151,24 @@
     document.getElementById('stat-count').textContent = '0';
   }
 
-  function setStatus(connected) {
-    const dot  = document.getElementById('dot');
-    const text = document.getElementById('status-text');
-    dot.className  = 'dot' + (connected ? ' connected' : '');
-    text.textContent = connected ? 'Conectado' : 'Desconectado';
-  }
-
   function addEvent(msg) {
-    const feed = document.getElementById('feed');
-    const empty = feed.querySelector('.empty-state');
+    var feed  = document.getElementById('feed');
+    var empty = feed.querySelector('.empty-state');
     if (empty) empty.remove();
-
-    const typeClass = 'ev-' + (msg.type || 'unknown').replace(/:/g, '-');
-    const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-CL') : '';
-
-    let extra = '';
-    if (msg.jobId)    extra += `jobId: ${msg.jobId}  `;
-    if (msg.progress) extra += `progreso: ${msg.progress}%  `;
-    if (msg.tablesUpdated) extra += `tablas: ${msg.tablesUpdated.join(', ')}`;
-    if (msg.products) extra += `${msg.products.length} producto(s)`;
-
-    const div = document.createElement('div');
-    div.className = `event ${typeClass}`;
-    div.innerHTML = `
-      <div class="ev-type">${msg.type || 'unknown'}</div>
-      <div class="ev-msg">${msg.message || ''}</div>
-      ${extra ? `<div class="ev-extra">${extra}</div>` : ''}
-      <div class="ev-time">${time}</div>
-    `;
-
+    var typeClass = 'ev-' + (msg.type || 'unknown').replace(/:/g, '-');
+    var time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-CL') : '';
+    var extra = '';
+    if (msg.jobId)         extra += 'jobId: ' + msg.jobId + '  ';
+    if (msg.progress)      extra += 'progreso: ' + msg.progress + '%  ';
+    if (msg.tablesUpdated) extra += 'tablas: ' + msg.tablesUpdated.join(', ');
+    if (msg.products)      extra += msg.products.length + ' producto(s)';
+    var div = document.createElement('div');
+    div.className = 'event ' + typeClass;
+    div.innerHTML =
+      '<div class="ev-type">' + (msg.type || 'unknown') + '</div>' +
+      '<div class="ev-msg">'  + (msg.message || '') + '</div>' +
+      (extra ? '<div class="ev-extra">' + extra + '</div>' : '') +
+      '<div class="ev-time">' + time + '</div>';
     feed.insertBefore(div, feed.firstChild);
   }
 
@@ -219,12 +184,18 @@
     if (msg.type === 'batch:completed') {
       document.getElementById('stat-progress').textContent = '100%';
       document.getElementById('progress-fill').style.width = '100%';
-      setTimeout(() => {
+      setTimeout(function() {
         document.getElementById('progress-fill').style.width = '0%';
         document.getElementById('stat-progress').textContent = '—';
       }, 3000);
     }
   }
+
+  document.getElementById('btn-connect').addEventListener('click', connect);
+  document.getElementById('btn-disconnect').addEventListener('click', disconnect);
+  document.getElementById('btn-batch').addEventListener('click', triggerBatch);
+  document.getElementById('btn-inventory').addEventListener('click', subscribeInventory);
+  document.getElementById('btn-clear').addEventListener('click', clearFeed);
 </script>
 </body>
 </html>
