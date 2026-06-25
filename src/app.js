@@ -13,7 +13,7 @@ const { getClientCount } = require("./websocket/broadcaster");
 const app = express();
 
 // ── Middleware ───────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(morgan("combined"));
 app.use(express.json());
