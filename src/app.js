@@ -1,3 +1,4 @@
+const http    = require("http");
 const express = require("express");
 const cors    = require("cors");
 const helmet  = require("helmet");
@@ -6,6 +7,8 @@ const morgan  = require("morgan");
 const reportsRouter   = require("./routes/reports");
 const inventoryRouter = require("./routes/inventory");
 const batchRouter     = require("./routes/batch");
+const { setupWebSocket } = require("./websocket/wsServer");
+const { getClientCount } = require("./websocket/broadcaster");
 
 const app = express();
 
@@ -14,23 +17,25 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan("combined"));
 app.use(express.json());
+app.use(express.static("public")); // sirve ws-demo.html
 
 // ── Health check ─────────────────────────────────────────────
 app.get("/health", (_req, res) => {
   res.json({
-    status:    "ok",
-    service:   "G10 – Reportería / Batch / Streaming",
-    group:     "G10",
-    version:   "1.0.0",
-    timestamp: new Date().toISOString(),
+    status:          "ok",
+    service:         "G10 – Reportería / Batch / Streaming",
+    group:           "G10",
+    version:         "1.0.0",
+    wsClients:       getClientCount(),
+    timestamp:       new Date().toISOString(),
   });
 });
 
 app.get("/", (_req, res) => {
   res.json({
     message:   "FishMarket Cloud — G10 Reportería Mock API",
-    docs:      "Ver README.md para endpoints disponibles",
     health:    "/health",
+    wsDemo:    "/ws-demo.html",
     endpoints: [
       "GET  /api/v1/reports/sales-summary",
       "GET  /api/v1/reports/products",
@@ -41,6 +46,7 @@ app.get("/", (_req, res) => {
       "GET  /api/v1/reports/payment-summary",
       "GET  /api/v1/inventory/low-stock",
       "POST /api/v1/batch/recalculate",
+      "WS   /ws  ← eventos en tiempo real",
     ],
   });
 });
@@ -68,10 +74,15 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// ── Start ────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+// ── HTTP + WebSocket server ───────────────────────────────────
+const PORT   = process.env.PORT || 3000;
+const server = http.createServer(app);
+setupWebSocket(server);
+
+server.listen(PORT, () => {
   console.log(`✅  G10 Reportería Mock corriendo en puerto ${PORT}`);
+  console.log(`🔌  WebSocket disponible en ws://localhost:${PORT}/ws`);
+  console.log(`🌐  Demo WebSocket en http://localhost:${PORT}/ws-demo.html`);
 });
 
 module.exports = app;
