@@ -3,7 +3,7 @@
 
 Servicio mock del dominio **Reportería** del grupo G10. Expone los endpoints de reportes consolidados, resúmenes de ventas, inventario y recalculación batch para que los grupos consumidores puedan avanzar con su integración.
 
-> **Rol de G10:** consumidor de solo lectura. G10 no genera transacciones ni modifica datos. Lee desde G5 (Órdenes) y G6 (Pagos) vía RabbitMQ y expone dashboards agregados.
+> **Rol de G10:** consumidor de solo lectura. G10 no genera transacciones ni modifica datos. Lee desde G5 (Órdenes) y G6 (Pagos) vía Supabase Realtime y expone dashboards agregados.
 
 ---
 
@@ -101,7 +101,7 @@ Las tablas Supabase se encuentran en `database/schema.sql`. Las principales son:
 | `report_fulfillment_metrics` | KPIs de fulfillment |
 | `report_payment_summaries` | Resumen de pagos por método |
 | `batch_jobs` | Tracking de jobs de recalculación |
-| `streaming_events_log` | Log de eventos RabbitMQ consumidos |
+| `streaming_events_log` | Log de eventos Supabase Realtime consumidos |
 
 ---
 
@@ -133,8 +133,8 @@ g10-reporteria-mock/
 
 | Grupo | Dominio | Tipo | Criticidad |
 |-------|---------|------|-----------|
-| G5 | Órdenes | RabbitMQ consumer | 🔴 Crítica |
-| G6 | Pagos | RabbitMQ consumer | 🔴 Crítica |
+| G5 | Órdenes | Supabase Realtime consumer | 🔴 Crítica |
+| G6 | Pagos | Supabase Realtime consumer | 🔴 Crítica |
 | G3 | Catálogo | REST consumer | 🟠 Alta |
 | G8 | Shipment | REST consumer | 🟡 Media |
 
