@@ -52,6 +52,7 @@ function getSalesSummary({ startDate, endDate, groupBy = "day" }) {
   const totalRevenue = timeSeries.reduce((s, d) => s + d.revenue, 0);
 
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31", groupBy },
     summary: {
       totalRevenue,
@@ -79,6 +80,7 @@ function getProductBreakdown({ startDate, endDate, limit = 10 }) {
     .sort((a, b) => b.revenue - a.revenue);
 
   return {
+    source: "mock",
     period:      { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     topProducts,
     totalProducts: PRODUCTS.length,
@@ -99,6 +101,7 @@ function getStatusBreakdown({ startDate, endDate }) {
   ];
   const totalOrders = statusBreakdown.reduce((s, r) => s + r.count, 0);
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     totalOrders,
     statusBreakdown,
@@ -122,6 +125,7 @@ function getLowStock({ threshold = 10 }) {
     }));
 
   return {
+    source: "mock",
     threshold:     thresh,
     totalProducts: products.length,
     products,
@@ -134,6 +138,7 @@ function getLowStock({ threshold = 10 }) {
 // ────────────────────────────────────────────────
 function getFulfillment({ startDate, endDate }) {
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     metrics: {
       fulfillmentRate:       0.943,
@@ -161,6 +166,7 @@ function getFulfillment({ startDate, endDate }) {
 // ────────────────────────────────────────────────
 function getCommunications({ startDate, endDate }) {
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     summary: {
       totalSent: 1247,
@@ -189,6 +195,7 @@ function getOrderTrends({ startDate, endDate, interval = "day" }) {
   const avgSecond = second.reduce((a, b) => a + b, 0) / (second.length || 1);
 
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31", interval },
     trends: timeSeries,
     insights: {
@@ -218,6 +225,7 @@ function getPaymentSummary({ startDate, endDate }) {
   const totalAmount = byMethod.reduce((s, m) => s + m.amount, 0);
 
   return {
+    source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     summary: {
       totalAmount,

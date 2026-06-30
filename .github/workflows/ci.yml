@@ -1,0 +1,64 @@
+name: CI/CD — G10 Reportería
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check (todas las rutas y módulos)
+        run: |
+          for f in $(find src scripts -name "*.js"); do
+            node -c "$f" || exit 1
+          done
+          echo "✅ Sintaxis OK en todos los archivos"
+
+      - name: Levantar servidor (modo mock, sin DATABASE_URL)
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000/health --timeout 15000
+
+      - name: Instalar Newman
+        run: npm install -g newman
+
+      - name: Ejecutar colección de Postman (33 tests)
+        run: |
+          newman run postman/G10-Reporteria.postman_collection.json \
+            --env-var "baseUrl=http://localhost:3000/api/v1" \
+            --env-var "startDate=2025-01-01" \
+            --env-var "endDate=2025-01-31"
+
+  deploy:
+    name: Deploy a Render
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Disparar deploy hook de Render
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "⚠️  RENDER_DEPLOY_HOOK_URL no está configurado como secret — se omite el deploy automático."
+            echo "    Render igual redepliega solo al detectar el push a main (auto-deploy nativo)."
+            exit 0
+          fi
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          echo "✅ Deploy hook disparado"

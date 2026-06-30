@@ -1,20 +1,23 @@
 const express = require("express");
 const router  = express.Router();
-const { getLowStock } = require("../data/mockData");
+
+const mock = require("../data/mockData");
+const db   = require("../repositories/reportsRepository");
+const { withFallback } = require("../utils/dataSource");
+const { AppError, asyncHandler } = require("../utils/errors");
+
+const lowStock = withFallback(db.getLowStock, mock.getLowStock);
 
 // ── GET /api/v1/inventory/low-stock ──────────────────────────
 // Query params: threshold (default 10)
-router.get("/low-stock", (req, res) => {
+router.get("/low-stock", asyncHandler(async (req, res) => {
   const { threshold } = req.query;
 
   if (threshold !== undefined && (isNaN(Number(threshold)) || Number(threshold) < 0)) {
-    return res.status(400).json({
-      error:   "Bad Request",
-      message: "threshold debe ser un número entero positivo",
-    });
+    throw new AppError(400, "Bad Request", "threshold debe ser un número entero positivo");
   }
 
-  res.json(getLowStock({ threshold }));
-});
+  res.json(await lowStock({ threshold }));
+}));
 
 module.exports = router;

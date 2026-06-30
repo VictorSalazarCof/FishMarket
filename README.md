@@ -1,9 +1,11 @@
 # G10 – Reportería / Batch / Streaming
-## FishMarket Cloud — Mock API
+## FishMarket Cloud — API
 
-Servicio mock del dominio **Reportería** del grupo G10. Expone endpoints REST de reportes consolidados, recalculación batch e inventario, además de un canal **WebSocket** para streaming de eventos en tiempo real.
+Servicio del dominio **Reportería** del grupo G10. Expone endpoints REST de reportes consolidados, recalculación batch e inventario, además de un canal **WebSocket** para streaming de eventos en tiempo real.
 
-> **Rol de G10:** consumidor de solo lectura. G10 no genera transacciones ni modifica datos. Lee desde G5 (Órdenes) y G6 (Pagos) vía Supabase Realtime y expone dashboards agregados.
+> **Rol de G10:** consumidor de solo lectura. G10 no genera transacciones ni modifica datos transaccionales de otros grupos. Lee desde G5 (Órdenes) y G6 (Pagos) vía Supabase Realtime y expone dashboards agregados.
+
+> **E3 — Persistencia real:** el servicio ahora lee y escribe en PostgreSQL (Supabase) cuando `DATABASE_URL` está configurada. Si no lo está (ej. desarrollo local sin DB), hace fallback automático a datos mock en memoria — mismo comportamiento que en E2. Cada respuesta incluye `source: "db"` o `source: "mock"` para que sea explícito de dónde vienen los datos.
 
 ---
 
@@ -38,7 +40,8 @@ El servidor emite eventos en tiempo real a todos los clientes conectados. El pri
 | `connected` | Al establecer la conexión |
 | `batch:queued` | Inmediatamente al encolar el job |
 | `batch:running` | 3 veces durante la ejecución (25%, 60%, 90%) |
-| `batch:completed` | Al finalizar el job |
+| `batch:completed` | Al finalizar el job. Incluye `persisted: true/false` según si escribió en la DB real o fue simulado |
+| `batch:failed` *(E3)* | Si la persistencia real falla (ej. DB caída a mitad de la recalculación) |
 | `report:updated` | Cuando las tablas de reporte son actualizadas |
 | `inventory:alert` | Cada 60s si hay productos con stock crítico |
 
@@ -108,6 +111,21 @@ curl -X POST "https://fishmarket-45lw.onrender.com/api/v1/batch/recalculate" \
 
 ---
 
+## Variables de entorno
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `PORT` | No (default 3000) | Puerto HTTP local |
+| `NODE_ENV` | No | `development` \| `production` |
+| `DATABASE_URL` | No* | Connection string de Supabase Postgres (Session Pooler). Si falta, el servicio usa datos mock automáticamente. |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | No | Reservadas para uso futuro del cliente JS de Supabase (Realtime/Auth) |
+
+\* No es obligatoria para que el servicio levante, pero **sí lo es** para cumplir el requisito de persistencia real de E3 en el deploy de producción.
+
+Ver plantilla completa en [`.env.example`](./.env.example). Nunca commitear `.env`.
+
+---
+
 ## Setup local
 
 ```bash
@@ -135,8 +153,31 @@ npm start     # Producción
 2. Crear un nuevo **Web Service** en [render.com](https://render.com) → runtime **Node**.
 3. Apuntar al repositorio, seleccionar rama `main`.
 4. Build: `npm install` | Start: `npm start`.
+5. En **Environment**, agregar la variable secreta `DATABASE_URL` con el connection string de Supabase (Session Pooler, puerto `6543`). Sin esto el servicio sigue funcionando, pero solo con datos mock.
+6. (Una sola vez) Poblar la base con histórico de demo desde tu máquina local:
+   ```bash
+   DATABASE_URL="postgresql://..." npm run seed
+   # o con un rango/cantidad de días distinto:
+   DATABASE_URL="postgresql://..." node scripts/seed.js --days=45 --end=2025-01-31
+   ```
 
-> **Nota free tier:** el servidor se duerme tras 15 min de inactividad. Hacer una request a `/health` antes de cualquier demo para despertarlo.
+> **Nota free tier:** el servidor se duerme tras 15 min de inactividad. Hacer una request a `/health` antes de cualquier demo para despertarlo — la respuesta incluye `persistence.connected` para confirmar que la DB está viva.
+
+---
+
+## CI/CD
+
+Pipeline en `.github/workflows/ci.yml`, con dos jobs:
+
+1. **`test`** (en cada push/PR a `main`): instala dependencias, valida sintaxis de todos los módulos, levanta el servidor en modo mock (sin `DATABASE_URL`, para no depender de Supabase en CI) y corre la colección completa de Postman con Newman.
+2. **`deploy`** (solo en push a `main`, si `test` pasó): dispara el *Deploy Hook* de Render vía `curl` usando el secret `RENDER_DEPLOY_HOOK_URL`.
+
+Para activar el deploy automático desde Actions (opcional — Render igual redespliega solo al detectar el push, vía su integración nativa con GitHub):
+
+1. En Render → tu servicio → **Settings → Deploy Hook** → copiar la URL.
+2. En GitHub → **Settings → Secrets and variables → Actions** → crear `RENDER_DEPLOY_HOOK_URL` con ese valor.
+
+Si el secret no está configurado, el job `deploy` no falla: simplemente omite el `curl` y deja que el auto-deploy nativo de Render haga el trabajo.
 
 ---
 
@@ -154,6 +195,34 @@ Las tablas Supabase se encuentran en `database/schema.sql`.
 | `report_payment_summaries` | Resumen de pagos por método |
 | `batch_jobs` | Tracking de jobs de recalculación |
 | `streaming_events_log` | Log de eventos Supabase Realtime consumidos |
+| `report_communications_summary` *(E3)* | Estadísticas de comunicaciones por tipo |
+| `report_fulfillment_by_region` *(E3)* | Desglose de fulfillment por región |
+| `report_fulfillment_by_carrier` *(E3)* | Desglose de fulfillment por transportista |
+
+Todas las escrituras son `INSERT ... ON CONFLICT (fecha, ...) DO UPDATE` (upsert), por lo que recalcular un mismo día es idempotente — no genera filas duplicadas.
+
+---
+
+## Manejo de errores
+
+Todas las respuestas de error (validación, 404, fallas internas) siguen el mismo formato:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "groupBy debe ser uno de: day, week, month",
+  "code": "BAD_REQUEST",
+  "timestamp": "2025-01-15T14:32:05.000Z"
+}
+```
+
+| Código HTTP | Cuándo |
+|---|---|
+| `400` | Parámetros de query/body inválidos (ver validaciones por endpoint) |
+| `404` | Ruta inexistente |
+| `500` | Error interno (ej. falla de conexión a la DB) — el `message` se mantiene genérico para no filtrar detalles internos; el detalle real queda solo en los logs del servidor |
+
+Los errores 500 reales (no simulados) ocurren típicamente si `DATABASE_URL` está mal formada o Supabase no responde — en ese caso **no** se hace fallback silencioso a mock, porque eso ocultaría un problema real de infraestructura en producción. El fallback a mock solo aplica cuando `DATABASE_URL` directamente no está configurada.
 
 ---
 
@@ -162,22 +231,37 @@ Las tablas Supabase se encuentran en `database/schema.sql`.
 ```
 g10-reporteria-mock/
 ├── src/
-│   ├── app.js                  # Entry point HTTP + WebSocket
+│   ├── app.js                       # Entry point HTTP + WebSocket
 │   ├── routes/
-│   │   ├── reports.js          # GET endpoints de reportes
-│   │   ├── inventory.js        # GET /inventory/low-stock
-│   │   └── batch.js            # POST /batch/recalculate + WS events
+│   │   ├── reports.js               # GET endpoints de reportes (DB con fallback a mock)
+│   │   ├── inventory.js             # GET /inventory/low-stock
+│   │   └── batch.js                 # POST /batch/recalculate + WS events + persistencia
 │   ├── websocket/
-│   │   ├── wsServer.js         # Servidor WebSocket (/ws)
-│   │   └── broadcaster.js      # Gestión de clientes y broadcast
+│   │   ├── wsServer.js              # Servidor WebSocket (/ws)
+│   │   └── broadcaster.js           # Gestión de clientes y broadcast
+│   ├── db/
+│   │   └── pool.js                  # Pool de conexión a Postgres/Supabase (E3)
+│   ├── repositories/                # (E3) Capa de acceso a datos real
+│   │   ├── reportsRepository.js     # Queries de lectura para cada endpoint GET
+│   │   ├── writeRepository.js       # Upserts de un día completo de métricas
+│   │   └── batchRepository.js       # Ciclo de vida del batch job (running → completed/failed)
+│   ├── utils/
+│   │   ├── errors.js                # AppError + asyncHandler (manejo de errores estándar)
+│   │   ├── dataSource.js            # Selector DB real vs mock fallback
+│   │   └── dataGenerator.js         # Generador de datos sintéticos consistentes (E3)
 │   └── data/
-│       └── mockData.js         # Datos y lógica mock
+│       └── mockData.js              # Datos y lógica mock (fallback, igual que en E2)
+├── scripts/
+│   └── seed.js                      # (E3) Pobla la DB con N días de histórico
 ├── public/
-│   └── ws-demo.html            # Cliente de demo WebSocket
+│   └── ws-demo.html                 # Cliente de demo WebSocket
 ├── database/
-│   └── schema.sql              # Modelo de datos Supabase
+│   └── schema.sql                   # Modelo de datos Supabase (E2 + tablas nuevas E3)
 ├── postman/
 │   └── G10-Reporteria.postman_collection.json
+├── .github/
+│   └── workflows/
+│       └── ci.yml                   # (E3) Pipeline CI/CD: tests + deploy a Render
 ├── .env.example
 ├── package.json
 ├── render.yaml

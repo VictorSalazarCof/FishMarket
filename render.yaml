@@ -9,3 +9,5 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: DATABASE_URL
+        sync: false   # se configura manualmente en el dashboard de Render (secreto, no se commitea)

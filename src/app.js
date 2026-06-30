@@ -9,6 +9,7 @@ const inventoryRouter = require("./routes/inventory");
 const batchRouter     = require("./routes/batch");
 const { setupWebSocket } = require("./websocket/wsServer");
 const { getClientCount } = require("./websocket/broadcaster");
+const { checkConnection, isConfigured } = require("./db/pool");
 
 const app = express();
 
@@ -20,13 +21,15 @@ app.use(express.json());
 app.use(express.static("public")); // sirve ws-demo.html
 
 // ── Health check ─────────────────────────────────────────────
-app.get("/health", (_req, res) => {
+app.get("/health", async (_req, res) => {
+  const db = await checkConnection();
   res.json({
     status:          "ok",
     service:         "G10 – Reportería / Batch / Streaming",
     group:           "G10",
-    version:         "1.0.0",
+    version:         "1.1.0",
     wsClients:       getClientCount(),
+    persistence:     { configured: isConfigured(), connected: db.connected, ...(db.reason ? { reason: db.reason } : {}) },
     timestamp:       new Date().toISOString(),
   });
 });
@@ -61,15 +64,23 @@ app.use((req, res) => {
   res.status(404).json({
     error:     "Not Found",
     message:   `Route ${req.method} ${req.path} not found`,
+    code:      "NOT_FOUND",
     timestamp: new Date().toISOString(),
   });
 });
 
 // ── Error handler ────────────────────────────────────────────
+// Compatible con el formato usado en E2 ({error, message}).
+// Los errores de validación (AppError) ya traen error/message/code.
+// Cualquier otro error (ej. fallas de conexión a DB) cae al
+// fallback genérico de 500 sin filtrar detalles internos.
 app.use((err, _req, res, _next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    error:     err.message || "Internal Server Error",
+  console.error(err.stack || err.message);
+  const status = err.status || 500;
+  res.status(status).json({
+    error:     err.error || "Internal Server Error",
+    message:   status === 500 ? "Ha ocurrido un error inesperado" : err.message,
+    code:      err.code || "INTERNAL_ERROR",
     timestamp: new Date().toISOString(),
   });
 });

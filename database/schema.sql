@@ -139,3 +139,55 @@ CREATE INDEX IF NOT EXISTS idx_streaming_events_unprocessed
 
 CREATE INDEX IF NOT EXISTS idx_streaming_events_source
   ON streaming_events_log (source_group, event_type);
+
+-- ============================================================
+-- Agregado en E3 — persistencia real de endpoints que en E2
+-- no tenían tabla propia (comunicaciones y desglose de
+-- fulfillment por región/transportista).
+-- ============================================================
+
+-- ── 9. Resumen de comunicaciones por tipo ────────────────────
+CREATE TABLE IF NOT EXISTS report_communications_summary (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_date  DATE         NOT NULL,
+  comm_type    VARCHAR(50)  NOT NULL,
+  total_sent   INTEGER      DEFAULT 0,
+  total_opened INTEGER      DEFAULT 0,
+  open_rate    NUMERIC(5,4),
+  click_rate   NUMERIC(5,4),
+  created_at   TIMESTAMPTZ  DEFAULT NOW(),
+  UNIQUE (report_date, comm_type)
+);
+
+-- ── 10. Fulfillment por región ────────────────────────────────
+CREATE TABLE IF NOT EXISTS report_fulfillment_by_region (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_date  DATE         NOT NULL,
+  region       VARCHAR(100) NOT NULL,
+  shipments    INTEGER      DEFAULT 0,
+  avg_days     NUMERIC(6,2),
+  on_time_rate NUMERIC(5,4),
+  created_at   TIMESTAMPTZ  DEFAULT NOW(),
+  UNIQUE (report_date, region)
+);
+
+-- ── 11. Fulfillment por transportista ─────────────────────────
+CREATE TABLE IF NOT EXISTS report_fulfillment_by_carrier (
+  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_date  DATE         NOT NULL,
+  carrier      VARCHAR(100) NOT NULL,
+  shipments    INTEGER      DEFAULT 0,
+  avg_days     NUMERIC(6,2),
+  on_time_rate NUMERIC(5,4),
+  created_at   TIMESTAMPTZ  DEFAULT NOW(),
+  UNIQUE (report_date, carrier)
+);
+
+CREATE INDEX IF NOT EXISTS idx_communications_date
+  ON report_communications_summary (report_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_fulfillment_region_date
+  ON report_fulfillment_by_region (report_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_fulfillment_carrier_date
+  ON report_fulfillment_by_carrier (report_date DESC);
