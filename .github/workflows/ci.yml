@@ -42,7 +42,7 @@ jobs:
       - name: Ejecutar colección de Postman (33 tests)
         run: |
           newman run postman/G10-Reporteria.postman_collection.json \
-            --env-var "baseUrl=http://localhost:3000/api/v1" \
+            --env-var "baseUrl=http://localhost:3000" \
             --env-var "startDate=2025-01-01" \
             --env-var "endDate=2025-01-31"
 
