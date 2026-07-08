@@ -191,3 +191,27 @@ CREATE INDEX IF NOT EXISTS idx_fulfillment_region_date
 
 CREATE INDEX IF NOT EXISTS idx_fulfillment_carrier_date
   ON report_fulfillment_by_carrier (report_date DESC);
+
+-- ============================================================
+-- Agregado en E4 — integración G9 (notificaciones, patrón batch)
+-- ============================================================
+
+-- ── 12. Cursor de polling por integración ─────────────────────
+CREATE TABLE IF NOT EXISTS integration_cursor (
+  integration_name   VARCHAR(50) PRIMARY KEY,
+  last_event_id      VARCHAR(100),
+  last_occurred_at   TIMESTAMPTZ,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ── 13. Eventos de G9 ya procesados (idempotencia) ────────────
+CREATE TABLE IF NOT EXISTS processed_notifications (
+  event_id           VARCHAR(100) PRIMARY KEY,
+  event_type         VARCHAR(50) NOT NULL,
+  order_id           VARCHAR(100),
+  correlation_id     VARCHAR(100),
+  processed_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_processed_notifications_order_id
+  ON processed_notifications (order_id);

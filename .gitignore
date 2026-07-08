@@ -24,3 +24,10 @@ Thumbs.db
 coverage/
 .nyc_output/
 tmp/
+
+# Build del dashboard (Vite)
+dashboard/dist/
+
+# Ignore de Claude
+.claude/
+claude/

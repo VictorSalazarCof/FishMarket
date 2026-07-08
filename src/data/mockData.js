@@ -16,13 +16,11 @@ const PRODUCTS = [
   { productId: "p010", name: "Waders de neopreno talla L",     category: "vestuario",   currentStock: 3,  reorderPoint: 5  },
 ];
 
-function generateTimeSeries(startDate, endDate, groupBy = "day") {
+function generateDailySeries(startDate, endDate) {
   const series = [];
   const start = new Date(startDate || "2025-01-01");
   const end   = new Date(endDate   || "2025-01-31");
   let current = new Date(start);
-
-  const stepDays = groupBy === "week" ? 7 : groupBy === "month" ? 30 : 1;
 
   while (current <= end) {
     const dayOfWeek = current.getDay();
@@ -38,9 +36,43 @@ function generateTimeSeries(startDate, endDate, groupBy = "day") {
       avgOrderValue: avgVal,
     });
 
-    current.setDate(current.getDate() + stepDays);
+    current.setDate(current.getDate() + 1);
   }
   return series;
+}
+
+// Agrupa la serie diaria en buckets semanales/mensuales sumando orders y revenue,
+// en vez de solo muestrear un día cada N. Así "week"/"month" reflejan totales reales.
+function aggregateSeries(dailySeries, groupBy) {
+  if (groupBy === "day") return dailySeries;
+
+  const buckets = new Map();
+  dailySeries.forEach(d => {
+    const dateObj = new Date(d.date);
+    let key;
+    if (groupBy === "week") {
+      const day = dateObj.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      const monday = new Date(dateObj);
+      monday.setDate(dateObj.getDate() + diffToMonday);
+      key = monday.toISOString().split("T")[0]; // fecha del lunes de esa semana
+    } else {
+      key = d.date.slice(0, 7); // "YYYY-MM"
+    }
+    if (!buckets.has(key)) buckets.set(key, { date: key, orders: 0, revenue: 0 });
+    const bucket = buckets.get(key);
+    bucket.orders  += d.orders;
+    bucket.revenue += d.revenue;
+  });
+
+  return Array.from(buckets.values()).map(b => ({
+    ...b,
+    avgOrderValue: b.orders ? Math.round(b.revenue / b.orders) : 0,
+  }));
+}
+
+function generateTimeSeries(startDate, endDate, groupBy = "day") {
+  return aggregateSeries(generateDailySeries(startDate, endDate), groupBy);
 }
 
 // ────────────────────────────────────────────────
@@ -55,6 +87,7 @@ function getSalesSummary({ startDate, endDate, groupBy = "day" }) {
     source: "mock",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31", groupBy },
     summary: {
+      currency: "CLP",
       totalRevenue,
       totalOrders,
       averageOrderValue: totalOrders ? Math.round(totalRevenue / totalOrders) : 0,
@@ -69,7 +102,6 @@ function getSalesSummary({ startDate, endDate, groupBy = "day" }) {
 // ────────────────────────────────────────────────
 function getProductBreakdown({ startDate, endDate, limit = 10 }) {
   const topProducts = PRODUCTS
-    .slice(0, Number(limit))
     .map(p => ({
       productId:  p.productId,
       name:       p.name,
@@ -77,10 +109,12 @@ function getProductBreakdown({ startDate, endDate, limit = 10 }) {
       unitsSold:  Math.floor(20 + Math.random() * 80),
       revenue:    Math.floor(150000 + Math.random() * 600000),
     }))
-    .sort((a, b) => b.revenue - a.revenue);
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, Number(limit));
 
   return {
     source: "mock",
+    currency: "CLP",
     period:      { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     topProducts,
     totalProducts: PRODUCTS.length,
@@ -89,6 +123,7 @@ function getProductBreakdown({ startDate, endDate, limit = 10 }) {
 
 // ────────────────────────────────────────────────
 // 3. GET /reports/status
+// TODO: reemplazar por datos reales desde tablas de G5 (Orders) vía Supabase Realtime
 // ────────────────────────────────────────────────
 function getStatusBreakdown({ startDate, endDate }) {
   const statusBreakdown = [
@@ -110,6 +145,7 @@ function getStatusBreakdown({ startDate, endDate }) {
 
 // ────────────────────────────────────────────────
 // 4. GET /inventory/low-stock
+// TODO: reemplazar por datos reales desde tablas de Inventario vía Supabase Realtime
 // ────────────────────────────────────────────────
 function getLowStock({ threshold = 10 }) {
   const thresh = Number(threshold);
@@ -135,6 +171,7 @@ function getLowStock({ threshold = 10 }) {
 
 // ────────────────────────────────────────────────
 // 5. GET /reports/fulfillment
+// TODO: reemplazar por datos reales desde tablas de G8 (Shipment) vía Supabase Realtime
 // ────────────────────────────────────────────────
 function getFulfillment({ startDate, endDate }) {
   return {
@@ -163,6 +200,7 @@ function getFulfillment({ startDate, endDate }) {
 
 // ────────────────────────────────────────────────
 // 6. GET /reports/communications
+// TODO: reemplazar por datos reales consumiendo GET /notifications/stats de G9 (Notifications)
 // ────────────────────────────────────────────────
 function getCommunications({ startDate, endDate }) {
   return {
@@ -210,6 +248,7 @@ function getOrderTrends({ startDate, endDate, interval = "day" }) {
 
 // ────────────────────────────────────────────────
 // 8. GET /reports/payment-summary
+// TODO: reemplazar por datos reales desde tablas del grupo de Pagos vía Supabase Realtime
 // ────────────────────────────────────────────────
 function getPaymentSummary({ startDate, endDate }) {
   const byMethod = [
@@ -218,18 +257,20 @@ function getPaymentSummary({ startDate, endDate }) {
     { method: "bank_transfer",  count: 42,  amount: 378000,  successCount: 40  },
     { method: "paypal",         count: 13,  amount: 97000,   successCount: 13  },
   ];
+  const totalTransactions = byMethod.reduce((s, m) => s + m.count, 0);
   byMethod.forEach(m => {
     m.successRate = parseFloat((m.successCount / m.count).toFixed(4));
-    m.percentage  = parseFloat((m.count / 342 * 100).toFixed(1));
+    m.percentage  = parseFloat((m.count / totalTransactions * 100).toFixed(1));
   });
   const totalAmount = byMethod.reduce((s, m) => s + m.amount, 0);
 
   return {
     source: "mock",
+    currency: "CLP",
     period: { startDate: startDate || "2025-01-01", endDate: endDate || "2025-01-31" },
     summary: {
       totalAmount,
-      totalTransactions: 342,
+      totalTransactions,
       successRate:        0.967,
     },
     byMethod,
@@ -245,6 +286,7 @@ function triggerBatchRecalculate({ targetDate, scope = "daily" }) {
   const eta   = new Date(now.getTime() + 3 * 60 * 1000); // +3 min
 
   return {
+    source:                   "mock",
     jobId,
     status:                  "queued",
     targetDate:              targetDate || now.toISOString().split("T")[0],

@@ -5,6 +5,9 @@ const mock = require("../data/mockData");
 const db   = require("../repositories/reportsRepository");
 const { withFallback } = require("../utils/dataSource");
 const { AppError, asyncHandler } = require("../utils/errors");
+const { adminOnly } = require("../middleware/authAdminMiddleware");
+
+router.use(adminOnly);
 
 const lowStock = withFallback(db.getLowStock, mock.getLowStock);
 

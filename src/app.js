@@ -1,4 +1,5 @@
 const http    = require("http");
+const path    = require("path");
 const express = require("express");
 const cors    = require("cors");
 const helmet  = require("helmet");
@@ -10,6 +11,7 @@ const batchRouter     = require("./routes/batch");
 const { setupWebSocket } = require("./websocket/wsServer");
 const { getClientCount } = require("./websocket/broadcaster");
 const { checkConnection, isConfigured } = require("./db/pool");
+const notificationPoller = require("./services/g9NotificationPoller");
 
 const app = express();
 
@@ -59,6 +61,22 @@ app.use("/api/v1/reports",   reportsRouter);
 app.use("/api/v1/inventory", inventoryRouter);
 app.use("/api/v1/batch",     batchRouter);
 
+// ── Dashboard estático (build de dashboard/, servido con Vite) ─
+// Debe ir después de /api/v1/* para no interceptar esas rutas, y
+// antes del 404 genérico para que las rutas del SPA (client-side
+// routing) caigan en index.html en vez de 404. Excluye /api y /ws
+// explícitamente: sin esto, cualquier ruta de API inexistente
+// (ej. /api/v1/ruta-inexistente) también matchea "*" y devuelve el
+// index.html del dashboard en vez del 404 JSON esperado. Si
+// dashboard/dist no existe todavía (build pendiente), sendFile
+// falla y se sigue al 404 normal en vez de tirar un error sin manejar.
+app.use(express.static(path.join(__dirname, "../dashboard/dist")));
+app.get(/^(?!\/api|\/ws).*/, (req, res, next) => {
+  res.sendFile(path.join(__dirname, "../dashboard/dist/index.html"), (err) => {
+    if (err) next();
+  });
+});
+
 // ── 404 ──────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
@@ -74,14 +92,15 @@ app.use((req, res) => {
 // Los errores de validación (AppError) ya traen error/message/code.
 // Cualquier otro error (ej. fallas de conexión a DB) cae al
 // fallback genérico de 500 sin filtrar detalles internos.
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack || err.message);
   const status = err.status || 500;
   res.status(status).json({
-    error:     err.error || "Internal Server Error",
-    message:   status === 500 ? "Ha ocurrido un error inesperado" : err.message,
-    code:      err.code || "INTERNAL_ERROR",
-    timestamp: new Date().toISOString(),
+    error:         err.error || "Internal Server Error",
+    message:       status === 500 ? "Ha ocurrido un error inesperado" : err.message,
+    code:          err.code || "INTERNAL_ERROR",
+    correlationId: req.correlationId || null,
+    timestamp:     new Date().toISOString(),
   });
 });
 
@@ -89,6 +108,9 @@ app.use((err, _req, res, _next) => {
 const PORT   = process.env.PORT || 3000;
 const server = http.createServer(app);
 setupWebSocket(server);
+
+notificationPoller.start();
+process.on("SIGTERM", () => notificationPoller.stop());
 
 server.listen(PORT, () => {
   console.log(`✅  G10 Reportería Mock corriendo en puerto ${PORT}`);

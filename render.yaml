@@ -2,7 +2,10 @@ services:
   - type: web
     name: g10-reporteria-mock
     runtime: node
-    buildCommand: npm install
+    buildCommand: |
+      npm install
+      npm install -g pnpm
+      cd dashboard && pnpm install && pnpm run build && cd ..
     startCommand: npm start
     envVars:
       - key: NODE_ENV

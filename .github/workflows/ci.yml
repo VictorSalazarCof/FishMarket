@@ -24,6 +24,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # TODO: agregar step de build para dashboard/ (pnpm)
+      # - name: Build dashboard
+      #   run: |
+      #     corepack enable
+      #     pnpm --dir dashboard install
+      #     pnpm --dir dashboard build
+
       - name: Syntax check (todas las rutas y módulos)
         run: |
           for f in $(find src scripts -name "*.js"); do
@@ -39,12 +46,14 @@ jobs:
       - name: Instalar Newman
         run: npm install -g newman
 
-      - name: Ejecutar colección de Postman (33 tests)
+      - name: Ejecutar colección de Postman
         run: |
           newman run postman/G10-Reporteria.postman_collection.json \
             --env-var "baseUrl=http://localhost:3000" \
             --env-var "startDate=2025-01-01" \
-            --env-var "endDate=2025-01-31"
+            --env-var "endDate=2025-01-31" \
+            --env-var "adminToken=${{ secrets.G2_ADMIN_TOKEN }}" \
+            --env-var "nonAdminToken=${{ secrets.G2_NON_ADMIN_TOKEN }}"
 
   deploy:
     name: Deploy a Render

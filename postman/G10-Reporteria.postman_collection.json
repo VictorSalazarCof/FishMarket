@@ -20,6 +20,34 @@
       "key": "endDate",
       "value": "2025-01-31",
       "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "Token Bearer de un usuario admin (ej. maria@correo.cl) emitido por G2. Requerido para que pasen los folders 📊 Reportes, 📦 Inventario y 🔐 E4."
+    },
+    {
+      "key": "nonAdminToken",
+      "value": "",
+      "type": "string",
+      "description": "Token Bearer de un usuario no-admin (ej. juan@correo.cl) emitido por G2, usado en el caso 403 de 🔐 E4."
+    },
+    {
+      "key": "g9BaseUrl",
+      "value": "https://notification-service-i3bn.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "g5BaseUrl",
+      "value": "https://pedidos-g5.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "g5TestUserId",
+      "value": "USR-12",
+      "type": "string",
+      "description": "userId real con pedidos existentes en G5, confirmado en vivo el 2026-07-08."
     }
   ],
   "item": [
@@ -88,6 +116,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/sales-summary?startDate={{startDate}}&endDate={{endDate}}&groupBy=day",
               "host": ["{{baseUrl}}"],
@@ -119,6 +150,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/sales-summary?startDate={{startDate}}&endDate={{endDate}}&groupBy=week",
               "host": ["{{baseUrl}}"],
@@ -150,6 +184,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/sales-summary?groupBy=invalid",
               "host": ["{{baseUrl}}"],
@@ -184,6 +221,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/products?startDate={{startDate}}&endDate={{endDate}}&limit=5",
               "host": ["{{baseUrl}}"],
@@ -217,6 +257,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/status?startDate={{startDate}}&endDate={{endDate}}",
               "host": ["{{baseUrl}}"],
@@ -250,6 +293,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/fulfillment?startDate={{startDate}}&endDate={{endDate}}",
               "host": ["{{baseUrl}}"],
@@ -281,6 +327,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/communications?startDate={{startDate}}&endDate={{endDate}}",
               "host": ["{{baseUrl}}"],
@@ -313,6 +362,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/order-trends?startDate={{startDate}}&endDate={{endDate}}&interval=day",
               "host": ["{{baseUrl}}"],
@@ -346,6 +398,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/reports/payment-summary?startDate={{startDate}}&endDate={{endDate}}",
               "host": ["{{baseUrl}}"],
@@ -385,6 +440,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=10",
               "host": ["{{baseUrl}}"],
@@ -415,6 +473,9 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=5",
               "host": ["{{baseUrl}}"],
@@ -440,12 +501,208 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=abc",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "inventory", "low-stock"],
               "query": [
                 { "key": "threshold", "value": "abc" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 E4 - Integración G2/G9",
+      "item": [
+        {
+          "name": "G2 - Sin token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 sin Authorization', () => pm.response.to.have.status(401));",
+                  "pm.test('code MISSING_TOKEN', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.code).to.eql('MISSING_TOKEN');",
+                  "  pm.expect(json).to.have.property('correlationId');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"]
+            }
+          }
+        },
+        {
+          "name": "G2 - Token inválido → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 con token inválido', () => pm.response.to.have.status(401));",
+                  "pm.test('code INVALID_TOKEN', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.code).to.eql('INVALID_TOKEN');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer token-invalido-de-prueba" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"]
+            }
+          }
+        },
+        {
+          "name": "G2 - Token no-admin (juan@correo.cl) → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403 con token no-admin', () => pm.response.to.have.status(403));",
+                  "pm.test('code FORBIDDEN_NOT_ADMIN', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.code).to.eql('FORBIDDEN_NOT_ADMIN');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{nonAdminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"]
+            }
+          }
+        },
+        {
+          "name": "G2 - Token admin (maria@correo.cl) → 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 con token admin', () => pm.response.to.have.status(200));",
+                  "pm.test('Header X-Correlation-Id presente', () => {",
+                  "  pm.expect(pm.response.headers.has('X-Correlation-Id')).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/sales-summary?startDate={{startDate}}&endDate={{endDate}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "sales-summary"],
+              "query": [
+                { "key": "startDate", "value": "{{startDate}}" },
+                { "key": "endDate",   "value": "{{endDate}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "G9 - GET /notifications disponible → 200 con datos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae listado de notificaciones', () => {",
+                  "  const json = pm.response.json();",
+                  "  const list = Array.isArray(json) ? json : (json.data || json.items || json.notifications);",
+                  "  pm.expect(list).to.be.an('array');",
+                  "  if (list.length > 0) {",
+                  "    pm.expect(list[0]).to.have.property('eventId');",
+                  "    pm.expect(list[0]).to.have.property('eventType');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{g9BaseUrl}}/notifications?page=1&size=20",
+              "host": ["{{g9BaseUrl}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "G5 - GET /orders?userId disponible → 200 con datos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae listado paginado de pedidos', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json).to.have.property('pagination');",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('id');",
+                  "    pm.expect(json.data[0]).to.have.property('order_number');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{g5BaseUrl}}/orders?userId={{g5TestUserId}}&limit=5",
+              "host": ["{{g5BaseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "userId", "value": "{{g5TestUserId}}" },
+                { "key": "limit", "value": "5" }
               ]
             }
           }
