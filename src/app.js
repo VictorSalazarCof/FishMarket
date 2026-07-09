@@ -36,7 +36,7 @@ app.get("/health", async (_req, res) => {
   });
 });
 
-app.get("/", (_req, res) => {
+app.get("/api", (_req, res) => {
   res.json({
     message:   "FishMarket Cloud — G10 Reportería Mock API",
     health:    "/health",
