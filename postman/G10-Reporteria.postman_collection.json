@@ -2,13 +2,13 @@
   "info": {
     "_postman_id": "g10-reporteria-fishmarket-cloud",
     "name": "G10 – Reportería / Batch / Streaming",
-    "description": "Colección de pruebas para todos los endpoints del mock G10 – FishMarket Cloud.\nBase URL: https://g10-reporteria-mock.onrender.com\n\nVariables de entorno requeridas:\n- baseUrl: URL base del mock (local o Render)",
+    "description": "Colección de pruebas para todos los endpoints del mock G10 – FishMarket Cloud.\nBase URL: https://fishmarket-45lw.onrender.com\n\nVariables de entorno requeridas:\n- baseUrl: URL base del mock (local o Render)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://g10-reporteria-mock.onrender.com",
+      "value": "https://fishmarket-45lw.onrender.com",
       "type": "string"
     },
     {
