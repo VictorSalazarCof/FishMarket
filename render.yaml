@@ -14,3 +14,10 @@ services:
         value: 3000
       - key: DATABASE_URL
         sync: false   # se configura manualmente en el dashboard de Render (secreto, no se commitea)
+      # G7/G8: no se listan acá a propósito, igual que AUTH_SERVICE_URL,
+      # ORDERS_SERVICE_URL y G9_NOTIFICATIONS_URL — el código ya tiene sus
+      # URLs de producción reales como default (ver .env.example), así que
+      # no hace falta duplicarlas aquí. G6 sí se lista porque no tiene un
+      # default real todavía (ver src/services/g6PaymentsClient.js).
+      - key: G6_PAYMENTS_SERVICE_URL
+        sync: false   # G6 todavía no comparte una URL de producción — queda sin setear hasta que la confirmen

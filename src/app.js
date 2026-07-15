@@ -12,6 +12,7 @@ const { setupWebSocket } = require("./websocket/wsServer");
 const { getClientCount } = require("./websocket/broadcaster");
 const { checkConnection, isConfigured } = require("./db/pool");
 const notificationPoller = require("./services/g9NotificationPoller");
+const liveIntegrationsSync = require("./services/liveIntegrationsSync");
 
 const app = express();
 
@@ -111,6 +112,9 @@ setupWebSocket(server);
 
 notificationPoller.start();
 process.on("SIGTERM", () => notificationPoller.stop());
+
+liveIntegrationsSync.start();
+process.on("SIGTERM", () => liveIntegrationsSync.stop());
 
 server.listen(PORT, () => {
   console.log(`✅  G10 Reportería Mock corriendo en puerto ${PORT}`);

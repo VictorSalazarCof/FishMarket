@@ -162,4 +162,9 @@ async function persistDailyMetrics(metrics) {
   };
 }
 
-module.exports = { persistDailyMetrics };
+// upsertInventorySnapshots y upsertFulfillment se exportan además de
+// persistDailyMetrics porque src/services/liveIntegrationsSync.js (E4,
+// integración en vivo con G7/G8) las reutiliza directamente para no
+// duplicar lógica de SQL — no cambia nada de su comportamiento ni del
+// flujo existente de persistDailyMetrics.
+module.exports = { persistDailyMetrics, upsertInventorySnapshots, upsertFulfillment };
