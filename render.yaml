@@ -23,13 +23,13 @@ services:
         sync: false   # G6 todavía no comparte una URL de producción — queda sin setear hasta que la confirmen
       # G6 vía RabbitMQ (src/services/g6PaymentsConsumer.js) — RABBITMQ_URL
       # es secreto (connection string con credenciales), igual que
-      # DATABASE_URL. Exchange y routing keys no son secretos, pero se
-      # listan igual para que quede explícito en Render cuál es el valor
-      # real que se está usando (ver la nota de "sin confirmar" en
-      # .env.example antes de cambiarlos).
+      # DATABASE_URL. Exchange confirmado EN VIVO 2026-07-16 (ver cabecera
+      # de g6PaymentsConsumer.js): 'fishmarket'. Routing keys de
+      # approved/rejected siguen siendo inferencia por patrón, no
+      # confirmados en vivo todavía.
       - key: RABBITMQ_URL
         sync: false
       - key: RABBITMQ_EXCHANGE
-        value: payments.events
+        value: fishmarket
       - key: G6_PAYMENT_ROUTING_KEYS
         value: payment.approved,payment.rejected
