@@ -13,6 +13,7 @@ const { getClientCount } = require("./websocket/broadcaster");
 const { checkConnection, isConfigured } = require("./db/pool");
 const notificationPoller = require("./services/g9NotificationPoller");
 const liveIntegrationsSync = require("./services/liveIntegrationsSync");
+const g6PaymentsConsumer = require("./services/g6PaymentsConsumer");
 
 const app = express();
 
@@ -115,6 +116,9 @@ process.on("SIGTERM", () => notificationPoller.stop());
 
 liveIntegrationsSync.start();
 process.on("SIGTERM", () => liveIntegrationsSync.stop());
+
+g6PaymentsConsumer.start();
+process.on("SIGTERM", () => g6PaymentsConsumer.stop());
 
 server.listen(PORT, () => {
   console.log(`✅  G10 Reportería Mock corriendo en puerto ${PORT}`);

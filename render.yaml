@@ -21,3 +21,15 @@ services:
       # default real todavía (ver src/services/g6PaymentsClient.js).
       - key: G6_PAYMENTS_SERVICE_URL
         sync: false   # G6 todavía no comparte una URL de producción — queda sin setear hasta que la confirmen
+      # G6 vía RabbitMQ (src/services/g6PaymentsConsumer.js) — RABBITMQ_URL
+      # es secreto (connection string con credenciales), igual que
+      # DATABASE_URL. Exchange y routing keys no son secretos, pero se
+      # listan igual para que quede explícito en Render cuál es el valor
+      # real que se está usando (ver la nota de "sin confirmar" en
+      # .env.example antes de cambiarlos).
+      - key: RABBITMQ_URL
+        sync: false
+      - key: RABBITMQ_EXCHANGE
+        value: payments.events
+      - key: G6_PAYMENT_ROUTING_KEYS
+        value: payment.approved,payment.rejected

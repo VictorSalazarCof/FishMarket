@@ -136,6 +136,34 @@ async function upsertCommunications(m) {
   }
 }
 
+// A diferencia de todos los upserts de arriba (que sobreescriben por
+// fecha — pensados para recalcular un día completo desde cero), este es
+// INCREMENTAL: cada evento de pago que llega por streaming (G6, ver
+// src/services/g6PaymentsConsumer.js) suma sobre lo que ya había en vez de
+// reemplazarlo, porque los eventos llegan de a uno y no representan el
+// día completo. success_rate no se puede recalcular limpio con EXCLUDED
+// en el mismo UPSERT (necesita el transaction_count YA incrementado), así
+// que se hace con un segundo UPDATE inmediatamente después.
+async function incrementPaymentSummary({ date, method, amount, success }) {
+  await query(
+    `INSERT INTO report_payment_summaries
+       (report_date, payment_method, transaction_count, total_amount, success_count)
+     VALUES ($1, $2, 1, $3, $4)
+     ON CONFLICT (report_date, payment_method) DO UPDATE SET
+       transaction_count = report_payment_summaries.transaction_count + 1,
+       total_amount = report_payment_summaries.total_amount + EXCLUDED.total_amount,
+       success_count = report_payment_summaries.success_count + EXCLUDED.success_count`,
+    [date, method, amount, success ? 1 : 0]
+  );
+
+  await query(
+    `UPDATE report_payment_summaries
+     SET success_rate = success_count::numeric / NULLIF(transaction_count, 0)
+     WHERE report_date = $1 AND payment_method = $2`,
+    [date, method]
+  );
+}
+
 // Persiste un día completo en todas las tablas. Se usa tanto desde
 // el seed histórico como desde la recalculación batch on-demand.
 async function persistDailyMetrics(metrics) {
@@ -167,4 +195,4 @@ async function persistDailyMetrics(metrics) {
 // integración en vivo con G7/G8) las reutiliza directamente para no
 // duplicar lógica de SQL — no cambia nada de su comportamiento ni del
 // flujo existente de persistDailyMetrics.
-module.exports = { persistDailyMetrics, upsertInventorySnapshots, upsertFulfillment };
+module.exports = { persistDailyMetrics, upsertInventorySnapshots, upsertFulfillment, incrementPaymentSummary };
