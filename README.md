@@ -320,7 +320,7 @@ Gap preexistente (no introducido por esta rama, descubierto durante el QA): `src
 
 ### 5. Seguridad — auditoría de credenciales
 
-Repetida en 3 momentos distintos (antes de crear `.env`, después de la integración de G3, y otra vez después del fix de `dotenv`):
+Repetida en 4 momentos distintos (antes de crear `.env`, después de la integración de G3, después del fix de `dotenv`, y otra vez tras reconciliar con `main`):
 - `.env` confirmado ignorado por git (`git check-ignore -v`) y ausente de `git status`/`git status --ignored` en cada pasada.
 - Búsqueda de los fragmentos exactos de cada credencial real (password de `DATABASE_URL`, usuario y password de `RABBITMQ_URL`, host de Supabase) en **todo el repositorio** (no solo archivos tocados, no solo tracked) — en todas las pasadas, aparecen únicamente en `./.env`.
 - Revisión línea por línea del diff completo de cada archivo que sí se commitea (`.env.example`, `package.json`, `pnpm-lock.yaml`, `README.md`, `src/app.js`, y todos los `.jsx`/`.js` tocados) — cero credenciales.
