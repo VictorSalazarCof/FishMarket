@@ -227,10 +227,20 @@ function getCommunications({ startDate, endDate }) {
 function getOrderTrends({ startDate, endDate, interval = "day" }) {
   const timeSeries = generateTimeSeries(startDate, endDate, interval);
   const revenues   = timeSeries.map(d => d.revenue);
-  const first  = revenues.slice(0, Math.floor(revenues.length / 2));
-  const second = revenues.slice(Math.floor(revenues.length / 2));
-  const avgFirst  = first.reduce((a, b) => a + b, 0)  / (first.length  || 1);
-  const avgSecond = second.reduce((a, b) => a + b, 0) / (second.length || 1);
+  const half   = Math.floor(revenues.length / 2);
+  const first  = revenues.slice(0, half);
+  const second = revenues.slice(half);
+  const avgFirst  = first.length  ? first.reduce((a, b) => a + b, 0)  / first.length  : 0;
+  const avgSecond = second.length ? second.reduce((a, b) => a + b, 0) / second.length : 0;
+  // Con menos de un punto en cada mitad (ej. un solo día seleccionado como
+  // rango) no hay comparación antes/después posible. Antes esto dividía
+  // por un promedio vacío (0, con fallback a 1) y "growthRate" terminaba
+  // siendo el revenue crudo del día, mostrado como un % absurdo en el
+  // dashboard (ej. "9000000.0%"). null es explícito: "no hay suficientes
+  // datos para calcular una tendencia", algo distinto de "0% de crecimiento".
+  const growthRate = first.length > 0 && second.length > 0
+    ? parseFloat(((avgSecond - avgFirst) / (avgFirst || 1)).toFixed(4))
+    : null;
 
   return {
     source: "mock",
@@ -239,7 +249,7 @@ function getOrderTrends({ startDate, endDate, interval = "day" }) {
     insights: {
       peakDay:      "Sábado",
       peakHour:     "19:00–21:00",
-      growthRate:   parseFloat(((avgSecond - avgFirst) / (avgFirst || 1)).toFixed(4)),
+      growthRate,
       totalOrders:  timeSeries.reduce((s, d) => s + d.orders,  0),
       totalRevenue: timeSeries.reduce((s, d) => s + d.revenue, 0),
     },

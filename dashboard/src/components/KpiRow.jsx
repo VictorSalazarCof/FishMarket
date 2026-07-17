@@ -12,7 +12,13 @@ export default function KpiRow({ sales, fulfillment, trends, loading }) {
   const summary = sales?.summary;
   const metrics = fulfillment?.metrics;
   const insights = trends?.insights;
-  const growthAccent = insights && insights.growthRate < 0 ? "var(--status-critical)" : "var(--status-good)";
+  const hasGrowthRate = insights && insights.growthRate !== null && insights.growthRate !== undefined;
+  // Sin datos suficientes (ej. un solo día seleccionado, el backend manda
+  // growthRate: null) el acento queda neutro — ni verde ni rojo, porque no
+  // hay una tendencia real que mostrar todavía.
+  const growthAccent = !hasGrowthRate
+    ? "var(--seq-450)"
+    : insights.growthRate < 0 ? "var(--status-critical)" : "var(--status-good)";
 
   return (
     <div className={`grid grid--kpis ${loading ? "is-loading" : ""}`}>
@@ -25,8 +31,8 @@ export default function KpiRow({ sales, fulfillment, trends, loading }) {
         <StatTile
           accent={growthAccent}
           label={`Crecimiento (pico: ${insights.peakDay})`}
-          value={formatPercent(insights.growthRate)}
-          delta={insights.growthRate * 100}
+          value={hasGrowthRate ? formatPercent(insights.growthRate) : "—"}
+          delta={hasGrowthRate ? insights.growthRate * 100 : undefined}
         />
       )}
     </div>
