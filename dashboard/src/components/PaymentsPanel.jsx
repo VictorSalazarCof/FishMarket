@@ -1,5 +1,5 @@
 import BarList from "./charts/BarList";
-import { formatCompactCurrency, formatPercent } from "../utils/format";
+import { formatCompactCurrency, formatNumber, formatPercent } from "../utils/format";
 
 const METHOD_LABELS = {
   credit_card: "Tarjeta de crédito", debit_card: "Tarjeta de débito",
@@ -8,7 +8,8 @@ const METHOD_LABELS = {
 
 export default function PaymentsPanel({ payments, loading }) {
   const rows = (payments?.byMethod || []).map((m) => ({
-    key: m.method, label: METHOD_LABELS[m.method] || m.method, value: m.amount, successRate: m.successRate,
+    key: m.method, label: METHOD_LABELS[m.method] || m.method, value: m.amount,
+    count: m.count, successRate: m.successRate,
   }));
 
   return (
@@ -25,7 +26,7 @@ export default function PaymentsPanel({ payments, loading }) {
         <BarList
           rows={rows}
           formatValue={(v) => formatCompactCurrency(v)}
-          getNote={(row) => ` · ${formatPercent(row.successRate)} éxito`}
+          getNote={(row) => ` · ${formatNumber(row.count)} pagos · ${formatPercent(row.successRate)} éxito`}
         />
       </div>
     </div>

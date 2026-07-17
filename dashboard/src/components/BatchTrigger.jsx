@@ -53,7 +53,7 @@ export default function BatchTrigger({ socket }) {
         </div>
       </div>
       <div className="card__body">
-        <div className="filter-bar" style={{ padding: 0, border: "none" }}>
+        <div className="inline-controls">
           <div className="filter-field">
             <label htmlFor="scope">Alcance</label>
             <select id="scope" value={scope} onChange={(e) => setScope(e.target.value)}>

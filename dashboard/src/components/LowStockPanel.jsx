@@ -54,14 +54,14 @@ export default function LowStockPanel({ socket }) {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Urgencia</th></tr>
+              <tr><th>Producto</th><th>Categoría</th><th className="num">Stock</th><th>Urgencia</th></tr>
             </thead>
             <tbody>
               {products.map((p) => (
                 <tr key={p.productId}>
                   <td>{p.name}</td>
                   <td>{p.category}</td>
-                  <td>{p.currentStock}</td>
+                  <td className="num">{p.currentStock}</td>
                   <td>
                     <span className={`badge ${URGENCY_BADGE[p.urgency] || "badge--neutral"}`}>
                       {URGENCY_LABEL[p.urgency] || p.urgency}

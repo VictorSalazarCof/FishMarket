@@ -13,6 +13,7 @@ export default function CommunicationsPanel({ communications, loading }) {
   const rows = (communications?.byType || []).map((t) => ({
     key: t.type,
     label: TYPE_LABELS[t.type] || t.type,
+    count: t.count,
     values: [Math.round(t.openRate * 100), Math.round(t.clickRate * 100)],
   }));
 
@@ -27,7 +28,13 @@ export default function CommunicationsPanel({ communications, loading }) {
         </div>
       </div>
       <div className="card__body">
-        <GroupedBars rows={rows} seriesNames={["Apertura %", "Clics %"]} formatValue={(v) => `${v}%`} max={100} />
+        <GroupedBars
+          rows={rows}
+          seriesNames={["Apertura %", "Clics %"]}
+          formatValue={(v) => `${v}%`}
+          max={100}
+          getRowNote={(row) => ` · ${formatNumber(row.count)} enviadas`}
+        />
       </div>
     </div>
   );

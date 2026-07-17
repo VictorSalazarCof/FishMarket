@@ -8,8 +8,10 @@
 // El header X-Consumer es obligatorio en todas las rutas — sin él, G7
 // devuelve 400 { code: "INVALID_REQUEST" } (confirmado con curl).
 // G7 NO expone productName/category/reorderPoint — ese dato vive en el
-// catálogo de G3, fuera de alcance de G10 (ver liveIntegrationsSync.js
-// para cómo se aproxima esto al persistir).
+// catálogo de G3 (ver src/services/g3CatalogClient.js). syncInventory en
+// liveIntegrationsSync.js cruza ambos por productId/id para enriquecer
+// el inventario; reorderPoint sigue en un umbral fijo (G3 tampoco lo
+// expone).
 
 const G7_BASE_URL = process.env.G7_INVENTORY_SERVICE_URL || "https://inventario-g7.onrender.com";
 const MAX_PAGES = 10; // tope de seguridad para fetchAllInventory, evita loop infinito si pagination viene mal

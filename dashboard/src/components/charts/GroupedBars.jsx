@@ -3,7 +3,7 @@
 
 const SERIES = ["var(--series-1)", "var(--series-2)"];
 
-export default function GroupedBars({ rows, seriesNames, formatValue, max = 100 }) {
+export default function GroupedBars({ rows, seriesNames, formatValue, max = 100, getRowNote }) {
   if (!rows || rows.length === 0) {
     return <p className="empty-state">Sin datos para el rango seleccionado.</p>;
   }
@@ -21,7 +21,10 @@ export default function GroupedBars({ rows, seriesNames, formatValue, max = 100 
       <div className="bar-list">
         {rows.map((row) => (
           <div key={row.key} style={{ marginBottom: 10 }}>
-            <div className="bar-list__label" style={{ marginBottom: 4 }}>{row.label}</div>
+            <div className="bar-list__label" style={{ marginBottom: 4 }}>
+              {row.label}
+              {getRowNote && <span className="bar-list__note">{getRowNote(row)}</span>}
+            </div>
             {row.values.map((value, i) => (
               <div className="bar-list__row" style={{ gridTemplateColumns: "0px 1fr auto" }} key={i}>
                 <span />
