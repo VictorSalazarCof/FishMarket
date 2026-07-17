@@ -52,6 +52,15 @@ async function upsertOrderStatus(m) {
   }
 }
 
+// product_name/category están en el SET del ON CONFLICT (no solo
+// current_stock/is_low_stock, como estaba antes): sin esto, una fila ya
+// creada para ese (snapshot_date, product_id) nunca actualizaba el nombre
+// aunque llegara uno mejor en un ciclo posterior — quedaba invisible antes
+// de G3 (el nombre siempre era el mismo productId, nunca "cambiaba"), pero
+// bloqueaba en silencio el enriquecimiento de catálogo de G3 una vez que
+// existió (confirmado: una fila del primer ciclo de hoy, antes de G3,
+// se quedó pegada en productId como nombre pese a que ciclos posteriores
+// sí resolvían el nombre real).
 async function upsertInventorySnapshots(m) {
   for (const p of m.inventory) {
     const isLow = p.currentStock < p.reorderPoint;
@@ -60,6 +69,8 @@ async function upsertInventorySnapshots(m) {
          (snapshot_date, product_id, product_name, category, current_stock, reorder_point, is_low_stock)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (snapshot_date, product_id) DO UPDATE SET
+         product_name = EXCLUDED.product_name,
+         category = EXCLUDED.category,
          current_stock = EXCLUDED.current_stock,
          is_low_stock = EXCLUDED.is_low_stock`,
       [m.date, p.productId, p.name, p.category, p.currentStock, p.reorderPoint, isLow]
