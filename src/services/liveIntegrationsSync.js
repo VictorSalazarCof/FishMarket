@@ -17,6 +17,7 @@ const crypto = require("crypto");
 const { isConfigured: isDbConfigured } = require("../db/pool");
 const { fetchAllInventory } = require("./g7InventoryClient");
 const { fetchAllShipments } = require("./g8ShipmentsClient");
+const { fetchCatalogMap } = require("./g3CatalogClient");
 const { upsertInventorySnapshots, upsertFulfillment } = require("../repositories/writeRepository");
 
 const SYNC_INTERVAL_MS = parseInt(process.env.LIVE_SYNC_INTERVAL_MS || "60000", 10);
@@ -42,20 +43,35 @@ async function syncInventory(correlationId, logger = console) {
 
   const items = await fetchAllInventory(correlationId);
 
-  // G7 no expone productName/category (viven en el catálogo de G3, fuera
-  // de alcance de G10) — se usa el productId como aproximación de `name`
-  // y `category` queda null hasta que exista una integración real con G3.
-  const inventory = items.map((p) => ({
-    productId: p.productId,
-    name: p.productId,
-    category: null,
-    currentStock: p.availableStock,
-    reorderPoint: DEFAULT_REORDER_POINT,
-  }));
+  // Enriquecer con nombre/categoría real desde el catálogo de G3
+  // (productId de G7 == id de producto en G3, confirmado en vivo — ver
+  // g3CatalogClient.js). Si G3 falla, no se aborta el sync de inventario:
+  // se cae al mismo fallback que existía antes de esta integración
+  // (productId como nombre, category null), mismo criterio de degradación
+  // tolerante que usa el resto de las integraciones de este archivo.
+  let catalogMap = new Map();
+  try {
+    catalogMap = await fetchCatalogMap(correlationId);
+  } catch (err) {
+    logger.error(
+      `[live-sync] No se pudo enriquecer inventario con el catálogo de G3 (correlationId=${correlationId}): ${err.message}`
+    );
+  }
+
+  const inventory = items.map((p) => {
+    const catalogEntry = catalogMap.get(p.productId);
+    return {
+      productId: p.productId,
+      name: catalogEntry?.name || p.productId,
+      category: catalogEntry?.category ?? null,
+      currentStock: p.availableStock,
+      reorderPoint: DEFAULT_REORDER_POINT,
+    };
+  });
 
   await upsertInventorySnapshots({ date: today(), inventory });
   logger.log(
-    `[live-sync] Inventario sincronizado desde G7: ${inventory.length} producto(s) (correlationId=${correlationId})`
+    `[live-sync] Inventario sincronizado desde G7: ${inventory.length} producto(s), ${catalogMap.size} con catálogo de G3 (correlationId=${correlationId})`
   );
 }
 
