@@ -1,4 +1,4 @@
-import StackedBar from "./charts/StackedBar";
+import BarList from "./charts/BarList";
 import { formatNumber } from "../utils/format";
 
 const STATUS_LABELS = {
@@ -6,10 +6,29 @@ const STATUS_LABELS = {
   pending: "Pendiente", cancelled: "Cancelado", returned: "Devuelto",
 };
 
+// Mismo código de color que ya usan los badges de estado en OrdersTable
+// y LowStockPanel — verde = resultado bueno, rojo = malo, ámbar = en
+// espera, violeta = en curso sin connotación buena/mala.
+const STATUS_COLOR = {
+  delivered: "var(--status-good)",
+  shipped: "var(--series-1)",
+  processing: "var(--series-5)",
+  pending: "var(--status-warning)",
+  cancelled: "var(--status-critical)",
+  returned: "var(--status-serious)",
+};
+
 export default function StatusBreakdownPanel({ status, loading }) {
-  const segments = (status?.statusBreakdown || []).map((s) => ({
-    key: s.status, label: STATUS_LABELS[s.status] || s.status, value: s.count,
-  }));
+  const breakdown = status?.statusBreakdown || [];
+  const total = breakdown.reduce((sum, s) => sum + s.count, 0) || 1;
+
+  const rows = breakdown
+    .map((s) => ({
+      key: s.status,
+      label: STATUS_LABELS[s.status] || s.status,
+      value: (s.count / total) * 100,
+    }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div className={`card ${loading ? "is-loading" : ""}`}>
@@ -20,7 +39,11 @@ export default function StatusBreakdownPanel({ status, loading }) {
         </div>
       </div>
       <div className="card__body">
-        <StackedBar segments={segments} formatValue={(v) => formatNumber(v)} />
+        <BarList
+          rows={rows}
+          formatValue={(v) => `${v.toFixed(0)}%`}
+          getColor={(row) => STATUS_COLOR[row.key] || "var(--seq-450)"}
+        />
       </div>
     </div>
   );

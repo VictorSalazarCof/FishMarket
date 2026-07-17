@@ -35,7 +35,7 @@ export default function OrdersTable({ events }) {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Pedido</th><th>Evento</th><th>Usuario</th><th>Monto</th><th>Cuándo</th></tr>
+              <tr><th>Pedido</th><th>Evento</th><th>Usuario</th><th className="num">Monto</th><th>Cuándo</th></tr>
             </thead>
             <tbody>
               {orderEvents.map((e, i) => (
@@ -47,7 +47,7 @@ export default function OrdersTable({ events }) {
                     </span>
                   </td>
                   <td>{e.userId || "—"}</td>
-                  <td>{e.order?.totalAmount ? formatCompactCurrency(e.order.totalAmount) : "—"}</td>
+                  <td className="num">{e.order?.totalAmount ? formatCompactCurrency(e.order.totalAmount) : "—"}</td>
                   <td>{timeAgo(e.receivedAt)}</td>
                 </tr>
               ))}
