@@ -41,11 +41,18 @@
   --status-serious:  #ec835a;
   --status-critical: #d03b3b;
 
+  /* Identidad de marca FishMarket (header, CTAs) — fija en ambos temas,
+     no depende de --surface-1/--page-plane porque el header siempre es
+     navy, sea cual sea el modo. */
+  --brand-navy:       #0d2847;
+  --brand-navy-deep:  #081b32;
+  --brand-orange:     #f2790a;
+  --brand-orange-deep:#d9660a;
+
   /* Color de marca/acciones (botones primarios, foco, enlaces) —
-     separado a propósito de --series-1: hoy comparten valor, pero si
-     el chart palette cambia de orden algún día, el chrome de producto
-     no debe moverse con él. */
-  --brand: var(--series-1);
+     separado a propósito de --series-1: el chart palette y el chrome
+     de producto pueden moverse de forma independiente. */
+  --brand: var(--brand-orange);
 
   --radius-card: 10px;
   --radius-control: 6px;
@@ -156,8 +163,10 @@ button, input, select {
   flex-wrap: wrap;
   gap: 10px 16px;
   padding: 14px 24px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border);
+  /* Navy fijo de marca: el header no sigue el tema claro/oscuro del
+     contenido, igual que en el resto del sitio FishMarket. */
+  background: var(--brand-navy);
+  border-bottom: 1px solid var(--brand-navy-deep);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -175,18 +184,33 @@ button, input, select {
   font-weight: 700;
   letter-spacing: -0.01em;
   margin: 0;
+  color: #ffffff;
 }
 
 .app-header__title span {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.62);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.app-header .status-pill {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.app-header .btn {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.app-header .btn:hover { background: rgba(255, 255, 255, 0.16); }
 
 .app-main {
   flex: 1;
@@ -383,7 +407,7 @@ button, input, select {
   color: #ffffff;
 }
 
-.btn--primary:hover { filter: brightness(1.08); background: var(--brand); }
+.btn--primary:hover { background: var(--brand-orange-deep); border-color: var(--brand-orange-deep); }
 
 .icon-btn {
   padding: 8px;
