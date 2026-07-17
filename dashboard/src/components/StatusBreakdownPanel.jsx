@@ -27,6 +27,7 @@ export default function StatusBreakdownPanel({ status, loading }) {
       key: s.status,
       label: STATUS_LABELS[s.status] || s.status,
       value: (s.count / total) * 100,
+      count: s.count,
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -42,6 +43,7 @@ export default function StatusBreakdownPanel({ status, loading }) {
         <BarList
           rows={rows}
           formatValue={(v) => `${v.toFixed(0)}%`}
+          getNote={(row) => ` · ${formatNumber(row.count)} pedidos`}
           getColor={(row) => STATUS_COLOR[row.key] || "var(--seq-450)"}
         />
       </div>
