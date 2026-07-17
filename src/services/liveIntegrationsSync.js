@@ -1,12 +1,14 @@
 // ============================================================
-// G10 – Sync de integraciones en vivo (G7 + G8, patrón batch)
+// G10 – Sync de integraciones en vivo (G7 + G8 + G3, patrón batch)
 // ============================================================
 // Cada LIVE_SYNC_INTERVAL_MS, trae inventario real de G7 y envíos reales
 // de G8, y los persiste reutilizando los mismos upsert de
 // writeRepository.js que ya usa la recalculación batch sintética
 // (src/repositories/batchRepository.js) — no duplica lógica de SQL, solo
 // arma el objeto `metrics` parcial con la forma que esas funciones ya
-// esperan.
+// esperan. G3 (catálogo) se suma solo para enriquecer nombre/categoría del
+// inventario de G7 — el stock sigue siendo exclusivamente de G7, G3 nunca
+// es fuente de stock.
 //
 // No toca report_sales_daily, report_product_metrics, report_order_status,
 // report_payment_summaries ni report_communications_summary — esas tablas
@@ -17,6 +19,7 @@ const crypto = require("crypto");
 const { isConfigured: isDbConfigured } = require("../db/pool");
 const { fetchAllInventory } = require("./g7InventoryClient");
 const { fetchAllShipments } = require("./g8ShipmentsClient");
+const { fetchCatalogMap } = require("./g3CatalogClient");
 const { upsertInventorySnapshots, upsertFulfillment } = require("../repositories/writeRepository");
 
 const SYNC_INTERVAL_MS = parseInt(process.env.LIVE_SYNC_INTERVAL_MS || "60000", 10);
@@ -42,20 +45,41 @@ async function syncInventory(correlationId, logger = console) {
 
   const items = await fetchAllInventory(correlationId);
 
-  // G7 no expone productName/category (viven en el catálogo de G3, fuera
-  // de alcance de G10) — se usa el productId como aproximación de `name`
-  // y `category` queda null hasta que exista una integración real con G3.
-  const inventory = items.map((p) => ({
-    productId: p.productId,
-    name: p.productId,
-    category: null,
-    currentStock: p.availableStock,
-    reorderPoint: DEFAULT_REORDER_POINT,
-  }));
+  // G3 (catálogo) resuelve nombre/categoría real — separado en su propio
+  // try/catch a propósito: si G3 está caído o tarda, el sync de inventario
+  // NO debe romperse, sigue funcionando con el fallback de siempre
+  // (productId como nombre, category null). El stock sigue siendo
+  // exclusivamente de G7, G3 nunca se usa como fuente de stock.
+  let catalogMap = new Map();
+  try {
+    catalogMap = await fetchCatalogMap(correlationId);
+  } catch (err) {
+    logger.error(`[live-sync] Error consultando catálogo (G3, correlationId=${correlationId}): ${err.message} — se sigue con productId como nombre.`);
+  }
+
+  let matched = 0;
+  const inventory = items.map((p) => {
+    const catalogEntry = catalogMap.get(p.productId);
+    if (catalogEntry) matched += 1;
+    return {
+      productId: p.productId,
+      name: catalogEntry ? catalogEntry.name : p.productId,
+      category: catalogEntry ? catalogEntry.category : null,
+      currentStock: p.availableStock,
+      reorderPoint: DEFAULT_REORDER_POINT,
+    };
+  });
 
   await upsertInventorySnapshots({ date: today(), inventory });
   logger.log(
     `[live-sync] Inventario sincronizado desde G7: ${inventory.length} producto(s) (correlationId=${correlationId})`
+  );
+  // Instrumentación obligatoria (no opcional): el cruce productId↔G3 es un
+  // supuesto sin garantía formal entre grupos. Si "sin match" es alto o es
+  // el 100%, es señal de que los IDs no coinciden y hay que avisar en vez
+  // de confiar en silencio en que el dato mostrado es el real.
+  logger.log(
+    `[live-sync] Catálogo G3: ${matched}/${inventory.length} productos resueltos, ${inventory.length - matched} sin match`
   );
 }
 
